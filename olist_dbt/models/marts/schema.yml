@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: dim_products
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_sellers
+    columns:
+      - name: seller_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_time
+    columns:
+      - name: date_key
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_orders_sales
+    columns:
+      - name: order_item_key
+        tests:
+          - unique
+          - not_null
+
+      - name: order_status
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - 'delivered'
+                  - 'shipped'
+                  - 'canceled'
+                  - 'invoiced'
+                  - 'processing'
+                  - 'unavailable'
+                  - 'created'
+                  - 'approved'
+
+      - name: product_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_id
+
+      - name: seller_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sellers')
+                field: seller_id
+
+      - name: order_date_key
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: date_key
+
+  - name: fct_customer_rfm
+    columns:
+      - name: customer_unique_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_segment
+        tests:
+          - not_null
+      - name: is_churn
+        tests:
+          - not_null
