@@ -1,5 +1,8 @@
 sa_key.json
 venv/
+.venv/
 olist_dbt/target/
 olist_dbt/dbt_packages/
 olist_dbt/logs/
+
+archive/
