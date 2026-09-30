@@ -1,6 +1,13 @@
 version: 2
 
 models:
+  - name: dim_customers
+    columns:
+      - name: customer_unique_id
+        tests:
+          - unique
+          - not_null
+
   - name: dim_products
     columns:
       - name: product_id
@@ -22,11 +29,20 @@ models:
           - unique
           - not_null
 
-  - name: fct_orders_sales
+  - name: dim_payments
     columns:
-      - name: order_item_key
+      - name: order_id
         tests:
           - unique
+          - not_null
+
+  - name: fct_order_items_sales
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: order_item_id
+        tests:
           - not_null
 
       - name: order_status
@@ -34,14 +50,21 @@ models:
           - accepted_values:
               arguments:
                 values:
-                  - 'delivered'
-                  - 'shipped'
-                  - 'canceled'
-                  - 'invoiced'
-                  - 'processing'
-                  - 'unavailable'
-                  - 'created'
-                  - 'approved'
+                  - "delivered"
+                  - "shipped"
+                  - "canceled"
+                  - "invoiced"
+                  - "processing"
+                  - "unavailable"
+                  - "created"
+                  - "approved"
+
+      - name: customer_unique_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_unique_id
 
       - name: product_id
         tests:
@@ -63,6 +86,15 @@ models:
               arguments:
                 to: ref('dim_time')
                 field: date_key
+
+      - name: order_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_payments')
+                field: order_id
+              config:
+                severity: warn
 
   - name: fct_customer_rfm
     columns:
