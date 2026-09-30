@@ -18,8 +18,10 @@ select
     oi.product_id,
     oi.seller_id,
     cast(format_date('%Y%m%d', date(o.order_purchase_timestamp)) as int64) as order_date_key,
-    o.order_purchase_timestamp,
     o.order_status,
+    o.order_purchase_timestamp,
+    o.order_delivered_customer_date,
+    o.order_estimated_delivery_date,
     oi.price,
     oi.freight_value,
     (oi.price + oi.freight_value) as item_total_amount
