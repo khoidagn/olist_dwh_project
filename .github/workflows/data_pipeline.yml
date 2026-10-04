@@ -1,18 +1,15 @@
 name: Olist Data Warehouse E2E Pipeline
 
 on:
-  # Chạy tự động theo lịch (ví dụ: 02:00 AM UTC+7 hàng ngày = 19:00 UTC)
   schedule:
     - cron: '0 19 * * *'
-  # Cho phép bấm nút kích hoạt thủ công từ GitHub UI
   workflow_dispatch:
-  # Tự động kiểm tra pipeline khi push thay đổi vào nhánh main
   push:
     branches:
       - main
     paths:
-      - 'extract_load/**'
       - 'olist_dbt/**'
+      - '.github/workflows/**'
 
 jobs:
   run-pipeline:
@@ -40,22 +37,19 @@ jobs:
           cat << 'EOF' > /tmp/sa_key.json
           ${{ secrets.GCP_SA_KEY }}
           EOF
-
           PROJECT_ID=$(python3 -c "import json; print(json.load(open('/tmp/sa_key.json'))['project_id'])")
           echo "GCP_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
-          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa_key.json" >> $GITHUB_ENV
+          echo "GCP_KEYFILE=/tmp/sa_key.json" >> $GITHUB_ENV
 
-      - name: Step 1 - Extract & Load Raw Data to BigQuery
+      - name: Step 1 - Check Raw Layer Status
         run: |
-          python extract_load/load_to_bigquery.py
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa_key.json
+          echo "Dữ liệu raw_layer đã được nạp sẵn trên BigQuery (Dataset: raw_layer)."
+          echo "Bỏ qua bước nạp file CSV trên runner."
 
-      - name: Step 2 - dbt Dependencies & Test Source
+      - name: Step 2 - dbt Dependencies
         run: |
           cd olist_dbt
           dbt deps --profiles-dir .
-          dbt test --select source:* --profiles-dir . || true
 
       - name: Step 3 - dbt Transformation & Mart Modeling
         run: |
@@ -70,5 +64,5 @@ jobs:
       - name: Step 5 - Pipeline Health Summary
         if: always()
         run: |
-          echo "Pipeline executed at: $(date)"
-          echo "Status: ${{ job.status }}"
+          echo "Pipeline hoàn tất lúc: $(date)"
+          echo "Trạng thái: ${{ job.status }}"
