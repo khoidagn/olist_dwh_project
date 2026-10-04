@@ -1,11 +1,28 @@
-sa_key.json
-venv/
+# Môi trường ảo Python
 .venv/
+venv/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Google Cloud & Security Credentials
+*.json
+sa_key.json
+config/sa_key.json
+*.pem
+
+# Streamlit Local Secrets
+dashboard/.streamlit/secrets.toml
+
+# dbt Artifacts & Logs
 olist_dbt/target/
 olist_dbt/dbt_packages/
-olist_dbt/logs/
+logs/
+*.log
 
-archive/
-dashboard/.streamlit/secrets.toml
-dashboard/.venv/
-__pycache__/
+# IDE & OS
+.vscode/
+.DS_Store

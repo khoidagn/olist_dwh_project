@@ -1,149 +1,98 @@
-# Dashboard Olist Commerce Intelligence
+# 🛒 Olist Commerce Intelligence — Data Warehouse & Decision Support System
 
-Ứng dụng Streamlit đọc các bảng marts trên Google BigQuery (do dbt trong thư mục `olist_dbt` dựng) để phân tích doanh số, khách hàng và hỗ trợ quyết định chiến dịch giữ chân khách hàng cho bộ dữ liệu Olist.
+Hệ thống Data Warehouse phân tích dữ liệu thương mại điện tử Olist (Brazil) theo mô hình Modern Data Stack, kết hợp giữa **Google BigQuery**, **dbt Core** và **Streamlit**. Dự án cung cấp bức tranh toàn diện về doanh thu, phân khúc khách hàng (RFM) và công cụ hỗ trợ ra quyết định (DSS) cho các chiến dịch giữ chân khách hàng.
 
-## Yêu cầu
+---
 
-- Python 3.11 trở lên.
-- File key của service account có quyền đọc dataset trên BigQuery (`BigQuery Data Viewer` và `BigQuery Job User`).
-- Các bảng marts đã được tạo bằng `dbt run` trong thư mục `olist_dbt`.
+## 🏛️ Kiến trúc Tổng thể (End-to-End Pipeline)
 
-## Cấu trúc thư mục
-
-```
-dashboard/
-  Home.py                  Điểm vào, khai báo các trang và bảng đo hiệu năng
-  requirements.txt
-  .streamlit/
-    config.toml            Giao diện (theme)
-    secrets.toml.example   Mẫu cấu hình kết nối BigQuery
-    secrets.toml           Cấu hình thật, không commit
-  utils/
-    bigquery.py            Kết nối, cache, chạy truy vấn song song
-    queries.py             Toàn bộ câu SQL của các trang
-    filters.py             Bộ lọc ở sidebar
-    campaign.py            Mô hình tính của trang Chiến dịch giữ chân
-    charts.py, theme.py, layout.py   Định dạng số, biểu đồ, bố cục
-  views/
-    overview.py            Tổng quan
-    trends_geo.py          Xu hướng và địa lý
-    rfm.py                 Phân khúc RFM
-    churn.py               Churn và giữ chân
-    decision.py            Chiến dịch giữ chân (DSS)
-  tests/
-    e2e_check.py           Kiểm thử từ dữ liệu gốc đến giao diện
+```text
+[Kaggle CSV Dataset]
+        │
+        ▼ (Extract & Load)
+[Python Pipeline: extract_load/] ──> Google BigQuery (Raw Layer)
+        │
+        ▼ (Transform & Modeling)
+[dbt Core: olist_dbt/]
+  ├── Staging Layer       : Làm sạch, chuẩn hóa kiểu dữ liệu
+  ├── Intermediate Layer  : Tính toán điểm số RFM & hành vi khách hàng
+  └── Marts (Star Schema) : fct_order_items_sales, fct_customer_rfm, dim_products...
+        │
+        ▼ (Serving / Business Intelligence)
+[Streamlit Application: dashboard/]
+  ├── 1. Tổng quan kinh doanh : Phân tích GMV, đơn hàng, danh mục bán chạy
+  ├── 2. Xu hướng & Địa lý    : Biểu đồ đơn hàng theo bang & khung giờ
+  ├── 3. Phân khúc RFM        : Ma trận Recency, Frequency, Monetary
+  ├── 4. Churn & Giữ chân     : Cảnh báo khách hàng quá 90-180 ngày chưa quay lại
+  └── 5. Ra quyết định (DSS)  : Ước lượng ROI và ngân sách chiến dịch
 ```
 
-## Cài đặt
+## 🚀 Hướng dẫn Cài đặt & Chạy Local
 
-Chạy trong thư mục `dashboard`.
+### 1. Chuẩn bị môi trường
 
-Windows (PowerShell):
+Yêu cầu: **Python 3.10+** và hệ điều hành **Ubuntu/Linux** hoặc **macOS**.
 
-```
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
+```bash
+# Clone repository
+git clone https://github.com/khoidagn/olist_dwh_project.git
+cd olist_dwh_project
 
-macOS hoặc Linux:
-
-```
+# Khởi tạo và kích hoạt virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
+
+# Cài đặt thư viện phụ thuộc
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Cấu hình kết nối
+### 2. Cấu hình bảo mật & Credentials
 
-1. Sao chép `.streamlit/secrets.toml.example` thành `.streamlit/secrets.toml`.
-2. Điền các giá trị
-
-- `dataset`: dataset chứa các bảng marts do dbt tạo.
-- `location`: vùng của dataset, xem ở tab Details của dataset trên BigQuery.
-- `key_path`: đường dẫn tới file key, tính từ thư mục `dashboard`. Ví dụ trên ứng với file `sa_key.json` đặt ở thư mục gốc của repo.
-
-`secrets.toml` và `sa_key.json` đã nằm trong `.gitignore`. Không commit hai file này và không gửi file key qua kênh công khai.
-
-## Chạy ứng dụng
-
+Đặt file khóa Service Account Google Cloud vào thư mục gốc:
+```bash
+sa_key.json
 ```
+
+Đảm bảo Service Account có quyền BigQuery Admin.
+
+Thiết lập cấu hình kết nối Streamlit:
+```bash
+cp dashboard/.streamlit/secrets.toml.example dashboard/.streamlit/secrets.toml
+```
+Cập nhật *project_id* và đường dẫn file key bên trong secrets.toml.
+
+Lưu ý: Không commit *sa_key.json* và *secrets.toml* lên GitHub.
+
+### 3. Vận hành Transformation với dbt
+```bash
+cd olist_dbt
+
+# Kiểm tra kết nối tới BigQuery
+dbt debug --profiles-dir .
+
+# Chạy mô hình hóa dữ liệu
+dbt run --profiles-dir .
+
+# Chạy data tests
+dbt test --profiles-dir .
+
+cd ..
+```
+
+### 4. Khởi chạy Dashboard
+```bash
 cd dashboard
 streamlit run Home.py
 ```
-
-Trình duyệt mở tại `http://localhost:8501`. Luôn chạy lệnh từ thư mục `dashboard`, vì code import theo dạng `from utils...`.
-
-## Các trang
-
-| Nhóm | Trang | Nội dung chính | Bảng sử dụng |
-|---|---|---|---|
-| Kinh doanh | Tổng quan | KPI doanh thu, số đơn, AOV, phí ship, số khách so với kỳ liền trước; doanh thu theo tháng; danh mục; phương thức thanh toán; top 10 sản phẩm | `fct_order_items_sales`, `dim_time`, `dim_customers`, `dim_products`, `dim_payments` |
-| Kinh doanh | Xu hướng và địa lý | Xu hướng theo tháng hoặc quý, so sánh cùng kỳ, giờ và thứ đặt hàng, xếp hạng bang theo doanh thu, AOV, phí ship, giao trễ; top thành phố | `fct_order_items_sales`, `dim_time`, `dim_customers`, `dim_products` |
-| Khách hàng | Phân khúc RFM | Quy mô 7 phân khúc, tỷ trọng khách so với doanh thu, ma trận R và F, hồ sơ và hành động đề xuất, danh sách khách theo phân khúc | `fct_customer_rfm`, `dim_customers` |
-| Khách hàng | Churn và giữ chân | Tỷ lệ churn, phân bố số ngày từ lần mua cuối, churn theo bang và theo danh mục mua cuối, danh sách khách sắp rời bỏ | `fct_customer_rfm`, `dim_customers`, `dim_products`, `fct_order_items_sales` |
-| Ra quyết định | Chiến dịch giữ chân | Nhận diện nhóm khách sắp rời bỏ, thiết kế và so sánh 3 phương án, điểm hòa vốn, đường nhạy cảm lợi nhuận, danh sách khách mục tiêu | `fct_customer_rfm`, `dim_customers` |
-
-Bộ lọc ngày và danh mục chỉ áp dụng cho nhóm Kinh doanh. Các trang Khách hàng và Ra quyết định tính trên toàn bộ lịch sử mua và chỉ dùng bộ lọc bang.
-
-Định nghĩa dùng chung:
-
-- Đơn hợp lệ: loại trạng thái `canceled` và `unavailable`.
-- Doanh thu: tổng `price + freight_value`.
-- Churn: khách có recency lớn hơn 180 ngày. Sắp rời bỏ: recency từ 91 đến 180 ngày.
-- Ngày mốc tính recency: ngày mua cuối cùng trong dữ liệu cộng 1 ngày.
-
-## Hiệu năng và cache
-
-Ứng dụng có ba tầng cache:
-
-1. `st.cache_resource` giữ một BigQuery client cho cả ứng dụng.
-2. `st.cache_data` lưu kết quả truy vấn trong 12 giờ, theo câu SQL và tham số bộ lọc.
-3. Cache kết quả 24 giờ của BigQuery cho các truy vấn giống hệt nhau.
-
-Các truy vấn của một trang được gom thành một nhóm và chạy đồng thời bằng nhiều luồng, mỗi luồng gọi `client.query_and_wait()`.
-
-Mục "Hiệu năng và cache" ở cuối sidebar có:
-
-- Hiện bảng thông số: thời gian, số truy vấn, nguồn dữ liệu và dung lượng quét của từng nhóm truy vấn.
-- Chạy truy vấn song song: tắt để so sánh với cách chạy lần lượt.
-- Dùng cache của BigQuery: tắt để đo trường hợp BigQuery phải chạy lại.
-- Xóa cache Streamlit: bấm khi đang ở trang cần đo, hoặc sau mỗi lần chạy lại dbt để thấy dữ liệu mới.
-
-## Kiểm thử
-
+Truy cập ứng dụng tại:
+```bash
+http://localhost:8501
 ```
-cd dashboard
-python tests/e2e_check.py
-```
+## 🔄 Tự động hóa Pipeline (CI/CD)
 
-Script kiểm tra:
+Dự án tích hợp GitHub Actions (**.github/workflows/data_pipeline.yml**) để tự động hóa Data Pipeline:
 
-- Dữ liệu gốc sang kho: số dòng và tổng tiền của bảng fact khớp với `raw_layer`, không trùng khóa, số khách khớp.
-- Kho sang dashboard: KPI doanh thu, số đơn, phí ship, số khách khớp với số tính trực tiếp từ dữ liệu gốc; tổng theo tháng, quý, danh mục, bang, phương thức thanh toán khớp với KPI.
-- RFM, Churn, DSS: recency, frequency, cờ churn và phân khúc của từng khách khớp với tính lại từ dữ liệu gốc; số khách giữa các trang khớp nhau.
-- Giao diện: mở lần lượt 5 trang và báo lỗi nếu có.
-
-Kết quả đạt khi dòng cuối báo `0 lỗi`. Các dòng cảnh báo `missing ScriptRunContext` khi chạy script là bình thường.
-
-## Quy trình khi dữ liệu thay đổi
-
-1. Trong `olist_dbt`: `dbt run`, sau đó `dbt test`.
-2. Trong `dashboard`: `python tests/e2e_check.py`.
-3. Mở ứng dụng, bấm "Xóa cache Streamlit".
-
-## Xử lý sự cố
-
-| Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
-|---|---|---|
-| "Không truy vấn được BigQuery." | Sai `key_path`, key không có quyền, sai `location` hoặc `dataset` | Mở "Chi tiết lỗi" trên trang, kiểm tra lại `secrets.toml` |
-| `ModuleNotFoundError: No module named 'utils'` hoặc `'dashboard'` | Chạy lệnh ngoài thư mục `dashboard`, hoặc IDE tự thêm import `from dashboard.utils...` | Chạy từ thư mục `dashboard`, sửa import thành `from utils...` |
-| Số liệu chưa cập nhật sau khi chạy dbt | Kết quả cũ còn trong cache Streamlit | Bấm "Xóa cache Streamlit" |
-| Giao diện không đổi sau khi sửa `config.toml` | Theme chỉ được nạp khi khởi động | Dừng ứng dụng (Ctrl+C) và chạy lại |
-| `Port 8501 is already in use` | Một phiên Streamlit khác đang chạy | Tắt phiên cũ hoặc chạy `streamlit run Home.py --server.port 8502` |
-
-## Giới hạn
-
-- Khoảng 97% khách chỉ mua một lần, nên churn chủ yếu phản ánh thời điểm khách mua lần đầu.
-- Trang Chiến dịch giữ chân dùng các giả định do người dùng nhập (biên lợi nhuận, tỷ lệ tiếp cận, tỷ lệ mua thêm, chi phí liên hệ) vì dữ liệu Olist không có các thông tin này.
-- Ứng dụng hiện chạy cục bộ, chưa triển khai lên máy chủ.
+- Scheduled Run: Chạy định kỳ vào 02:00 AM (UTC+7) để tái tính toán các bảng marts.
+- Data Quality Gate: Tự động kích hoạt dbt test để kiểm tra tính toàn vẹn dữ liệu (not null, unique, relationships) trước khi chấp nhận dữ liệu mới.
+- Manual Trigger: Hỗ trợ kích hoạt thủ công thông qua giao diện GitHub Actions bằng workflow_dispatch.

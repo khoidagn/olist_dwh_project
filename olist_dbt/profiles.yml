@@ -1,0 +1,12 @@
+olist_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID', 'data-warehouse-group-5') }}"
+      dataset: olist_marts
+      keyfile: "{{ env_var('GCP_KEYFILE', '/home/khoidagn/olist_dwh_project/sa_key.json') }}"
+      threads: 4
+      timeout_seconds: 300
+      location: asia-southeast1
