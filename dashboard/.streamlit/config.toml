@@ -1,0 +1,23 @@
+[theme]
+base = "light"
+primaryColor = "#2A78D6"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F7F7F6"
+textColor = "#0B0B0B"
+linkColor = "#1C5CAB"
+borderColor = "#E1E0D9"
+dataframeBorderColor = "#E1E0D9"
+dataframeHeaderBackgroundColor = "#F7F7F6"
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "small"
+buttonRadius = "small"
+baseFontSize = 15
+font = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = "stacktrace"
+
+[server]
+runOnSave = true

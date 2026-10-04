@@ -6,3 +6,6 @@ olist_dbt/dbt_packages/
 olist_dbt/logs/
 
 archive/
+dashboard/.streamlit/secrets.toml
+dashboard/.venv/
+__pycache__/
