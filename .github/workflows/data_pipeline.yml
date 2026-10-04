@@ -15,6 +15,10 @@ jobs:
   run-pipeline:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: olist_dbt
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -28,11 +32,10 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install dbt-bigquery google-cloud-bigquery pandas
+          if [ -f ../requirements.txt ]; then pip install -r ../requirements.txt; else pip install dbt-bigquery google-cloud-bigquery pandas; fi
 
       - name: Authenticate with Google Cloud
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        working-directory: .
         run: |
           cat << 'EOF' > /tmp/sa_key.json
           ${{ secrets.GCP_SA_KEY }}
@@ -40,29 +43,42 @@ jobs:
           PROJECT_ID=$(python3 -c "import json; print(json.load(open('/tmp/sa_key.json'))['project_id'])")
           echo "GCP_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
           echo "GCP_KEYFILE=/tmp/sa_key.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa_key.json" >> $GITHUB_ENV
+
+      - name: Setup dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat << EOF > ~/.dbt/profiles.yml
+          olist_dbt:
+            target: prod
+            outputs:
+              prod:
+                type: bigquery
+                method: service-account
+                project: $GCP_PROJECT_ID
+                dataset: dbt_staging
+                keyfile: /tmp/sa_key.json
+                location: asia-southeast1
+                threads: 4
+                timeout_seconds: 300
+          EOF
 
       - name: Step 1 - Check Raw Layer Status
         run: |
           echo "Dữ liệu raw_layer đã được nạp sẵn trên BigQuery (Dataset: raw_layer)."
-          echo "Bỏ qua bước nạp file CSV trên runner."
+          echo "Tiến hành chạy biến đổi và kiểm thử dbt..."
 
       - name: Step 2 - dbt Dependencies
-        run: |
-          cd olist_dbt
-          dbt deps --profiles-dir .
+        run: dbt deps
 
       - name: Step 3 - dbt Transformation & Mart Modeling
-        run: |
-          cd olist_dbt
-          dbt run --profiles-dir .
+        run: dbt run
 
       - name: Step 4 - dbt Data Quality Validation
-        run: |
-          cd olist_dbt
-          dbt test --profiles-dir .
+        run: dbt test
 
       - name: Step 5 - Pipeline Health Summary
         if: always()
         run: |
           echo "Pipeline hoàn tất lúc: $(date)"
-          echo "Trạng thái: ${{ job.status }}"
+          echo "Trạng thái thực thi: ${{ job.status }}"

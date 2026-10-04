@@ -25,4 +25,14 @@ logs/
 
 # IDE & OS
 .vscode/
-.DS_Store
+.DS_Storesa_key.json
+*.json
+.venv/
+venv/
+logs/
+olist_dbt/target/
+olist_dbt/dbt_packages/
+olist_dbt/logs/
+__pycache__/
+*.pyc
+.env
