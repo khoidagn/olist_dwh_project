@@ -59,11 +59,11 @@ rfm_segmented as (
         case
             when r_score >= 4 and f_score >= 4 then 'Champions'
             when r_score >= 3 and f_score >= 3 then 'Loyal Customers'
-            when r_score >= 4 and f_score <= 2 then 'Promising / New Customers'
-            when r_score = 3 and f_score <= 2 then 'Potential Loyalists'
-            when r_score = 2 and f_score >= 2 then 'At Risk / Need Attention'
-            when r_score <= 2 and f_score <= 2 then 'Lost / Hibernating'
-            else 'About to Sleep'
+            when r_score >= 4 and f_score = 1 then 'Promising / New Customers'
+            when r_score = 3 and f_score = 1 then 'Potential Loyalists'
+            when r_score <= 2 and f_score >= 3 then 'At Risk / Need Attention'
+            when r_score = 2 and f_score = 1 then 'About to Sleep'
+            else 'Lost / Hibernating'
         end as customer_segment,
         case 
             when recency_days > 180 then true 
