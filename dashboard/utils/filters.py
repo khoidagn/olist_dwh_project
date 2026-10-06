@@ -72,6 +72,9 @@ def filter_options():
         select 'category' as kind, product_category_name_english as value
         from {table('dim_products')}
         group by value
+        union all
+        select 'last_date' as kind, cast(date(max(last_purchase_timestamp)) as string) as value
+        from {table('fct_customer_rfm')}
         order by kind, value
         """,
         (),
@@ -82,6 +85,8 @@ def _options():
     options = load(*filter_options(), label="Danh sách bộ lọc")
     states = options.loc[options["kind"] == "state", "value"].tolist()
     cats = options.loc[options["kind"] == "category", "value"].tolist()
+    last = options.loc[options["kind"] == "last_date", "value"].tolist()
+    st.session_state["data_last_date"] = last[0] if last else None
     return states, cats
 
 

@@ -58,7 +58,7 @@ results = load_many(
 
 page_header(
     "Xu hướng và địa lý",
-    "Doanh số chảy theo thời gian như thế nào và tập trung ở đâu trên bản đồ Brazil, "
+    "Doanh số chảy theo thời gian như thế nào và tập trung ở những bang, thành phố nào, "
     "dùng để chọn thời điểm chạy khuyến mãi và ưu tiên vùng đầu tư kho vận.",
     f.scope(),
 )

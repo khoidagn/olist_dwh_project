@@ -70,7 +70,10 @@ def table_view(
 
 def provenance(tables: list, extra: str | None = None) -> None:
     used = " · ".join(f"<code>{t}</code>" for t in tables)
-    last_date = load(*data_end(), label="Ngày cuối của dữ liệu").iloc[0]["last_date"]
+    last_date = st.session_state.get("data_last_date")
+    if last_date is None:
+        last_date = load(*data_end(), label="Ngày cuối của dữ liệu").iloc[0]["last_date"]
+    last_date = pd.to_datetime(last_date)
     asof_text = f"{last_date:%d/%m/%Y}" if pd.notna(last_date) else "chưa rõ"
     lines = [
         f"<b>Bảng dùng trên trang này</b> {used}.",
