@@ -36,3 +36,6 @@ olist_dbt/logs/
 __pycache__/
 *.pyc
 .env
+
+# Dashboard: so lieu xuat ra khi viet bao cao
+dashboard/report_numbers.txt

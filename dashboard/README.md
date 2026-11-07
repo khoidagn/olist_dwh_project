@@ -32,6 +32,7 @@ dashboard/
     decision.py            Chiến dịch giữ chân (DSS)
   tests/
     e2e_check.py           Kiểm thử từ dữ liệu gốc đến giao diện
+    report_numbers.py      Xuất số liệu dùng trong báo cáo
 ```
 
 ## Cài đặt
@@ -125,6 +126,14 @@ Script kiểm tra:
 - Giao diện: mở lần lượt 5 trang và báo lỗi nếu có.
 
 Kết quả đạt khi dòng cuối báo `0 lỗi`. Các dòng cảnh báo `missing ScriptRunContext` khi chạy script là bình thường.
+
+Số liệu dùng trong báo cáo được xuất bằng script riêng, chạy từ thư mục `dashboard`:
+
+```
+python tests/report_numbers.py
+```
+
+Kết quả được ghi vào `report_numbers.txt` với mã hóa UTF-8. Tệp này chỉ dùng để tra cứu khi viết báo cáo và không được commit.
 
 ## Quy trình khi dữ liệu thay đổi
 

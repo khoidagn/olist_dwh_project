@@ -191,10 +191,11 @@ if data.empty:
     st.stop()
 
 ranked = data.sort_values(col)
+scope = "các bang đã chọn" if f.states else "cả nước"
 leader = ranked.iloc[-1]
 if col in ("revenue", "orders"):
     share = leader[col] / ranked[col].sum()
-    headline = f"{leader['state']} dẫn đầu: {formatter(leader[col])}, bằng {pct(share)} cả nước"
+    headline = f"{leader['state']} dẫn đầu: {formatter(leader[col])}, bằng {pct(share)} {scope}"
 else:
     headline = f"{leader['state']} cao nhất: {formatter(leader[col])}"
 
@@ -218,7 +219,7 @@ with card(headline, f"{metric_label} theo bang của khách hàng · {len(ranked
         weights = ranked["delivered_orders"]
         overall = (ranked[col] * weights).sum() / weights.sum() if weights.sum() else None
     if overall is not None and pd.notna(overall):
-        reference_line(fig, overall, f"Cả nước {formatter(overall)}")
+        reference_line(fig, overall, f"{scope.capitalize()} {formatter(overall)}")
     fig.update_xaxes(tickformat=".0%" if col in ("freight_ratio", "late_rate") else None)
     fig.update_yaxes(tickfont=dict(size=11))
     show(fig, 460)

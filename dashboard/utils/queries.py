@@ -301,20 +301,6 @@ def rfm_matrix(f: Filters):
     )
 
 
-def rfm_sample(f: Filters):
-    return _rfm(
-        """
-        select
-            recency_days,
-            cast(monetary_value as float64) as monetary,
-            customer_segment as segment
-        from customers
-        where mod(abs(farm_fingerprint(customer_unique_id)), 20) = 0
-        """,
-        f,
-    )
-
-
 def segment_customers(f: Filters, segment: str, limit: int = 500):
     return _rfm(
         f"""

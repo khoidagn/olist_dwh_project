@@ -119,6 +119,7 @@ left, right = st.columns(2, gap="medium")
 with left:
     by_state = results["states"]
     overall = (by_state["churn_rate"] * by_state["customers"]).sum() / by_state["customers"].sum()
+    scope = "các bang đã chọn" if f.states else "cả nước"
     shown = by_state[by_state["customers"] >= MIN_CUSTOMERS].sort_values("churn_rate")
     if shown.empty:
         shown = by_state.sort_values("churn_rate")
@@ -136,7 +137,7 @@ with left:
                 hovertemplate="%{y}<br>Churn <b>%{x:.1%}</b><br>%{customdata:,} khách<extra></extra>",
             )
         )
-        reference_line(fig, overall, f"Trung bình cả nước {pct(overall)}")
+        reference_line(fig, overall, f"Trung bình {scope} {pct(overall)}")
         fig.update_xaxes(title="Tỷ lệ churn", tickformat=".0%", range=[0, 1])
         show(fig, 480)
         table_view(
@@ -147,7 +148,7 @@ with left:
                 "churn_rate": st.column_config.NumberColumn("Tỷ lệ churn", format="percent"),
             },
             "churn_theo_bang.csv",
-            label="Xem đủ 27 bang",
+            label=f"Xem đủ {len(by_state)} bang",
         )
 
 with right:
@@ -212,7 +213,7 @@ with st.expander("Định nghĩa và lưu ý khi diễn giải"):
 - **Sắp rời bỏ**: recency từ {COOLING_FROM} đến {CHURN_DAYS} ngày.
 - **Nhóm 30 ngày**: mọi trang đều dùng chung công thức `div(recency_days - 1, 30) * 30 + 1`,
   nên nhóm 91 phủ đúng 91-120 ngày và ngưỡng {CHURN_DAYS} rơi đúng ranh giới nhóm.
-- **Tỷ lệ trung bình cả nước** tính trên tất cả khách trong bộ lọc, kể cả bang bị ẩn khỏi biểu đồ.
+- **Tỷ lệ trung bình** tính trên tất cả khách trong bộ lọc, kể cả bang bị ẩn khỏi biểu đồ.
 - **Lưu ý quan trọng**: khoảng 97% khách Olist chỉ mua một lần, nên churn ở đây chủ yếu phản ánh
   *thời điểm khách mua lần đầu*. Danh mục hoặc bang bán mạnh từ sớm (2017) tất yếu có churn cao hơn.
   Hãy đọc con số này là "tỷ lệ chưa quay lại", không phải "khách bỏ đi vì không hài lòng".

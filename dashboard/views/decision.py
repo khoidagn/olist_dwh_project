@@ -49,7 +49,7 @@ def bucket_label(start: int) -> str:
 f = sidebar_filters()
 results = load_many(
     {"pool": campaign_pool(f), "overview": rfm_overview(f)},
-    label="Trang Hỗ trợ quyết định",
+    label="Trang Chiến dịch giữ chân",
 )
 pool = results["pool"].copy()
 overview = results["overview"].fillna(0).iloc[0]
