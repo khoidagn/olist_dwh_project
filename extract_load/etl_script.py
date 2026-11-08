@@ -1,83 +1,108 @@
 import os
+import pandas as pd
+from sqlalchemy import create_engine
 from google.cloud import bigquery
 
-# 1. Cấu hình xác thực bằng file JSON vừa tải về
-# Thư mục chứa script này (extract_load/)
+# 1. Cấu hình xác thực bằng file JSON 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Root project = thư mục cha của extract_load/
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
-
-# Đường dẫn tuyệt đối đến key, dù chạy từ đâu cũng đúng
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(PROJECT_ROOT, "sa_key.json")
 
-# CSV vẫn nằm trong extract_load/archive
-csv_folder = os.path.join(BASE_DIR, "archive")
 
-# 2. Khởi tạo BigQuery Client
-client = bigquery.Client()
+def load_env(env_path: str) -> None:
+    """Đọc file .env đơn giản không cần cài thêm thư viện ngoài"""
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, val = line.split("=", 1)
+                    os.environ.setdefault(key.strip(), val.strip().strip("'\""))
 
-# Điền thông tin Project và Dataset của bạn
-project_id = "data-warehouse-group-5"
-dataset_id = "raw_layer"
+
+# Đọc cấu hình từ .env
+load_env(os.path.join(PROJECT_ROOT, ".env"))
+load_env(os.path.join(BASE_DIR, ".env"))
+
+# 2. Khai báo chuỗi kết nối từ Neon (lấy theo DATABASE_URL hoặc NEON_DATABASE_URL từ .env)
+NEON_DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("NEON_DATABASE_URL")
+
+if not NEON_DATABASE_URL:
+    raise ValueError(
+        "❌ LỖI: Không tìm thấy DATABASE_URL hoặc NEON_DATABASE_URL trong file .env!\n"
+        f"Vui lòng kiểm tra lại file: {os.path.join(PROJECT_ROOT, '.env')}"
+    )
+
+# 3. Danh sách các bảng cần đồng bộ từ Neon sang BigQuery (khớp 100% với dbt sources.yml)
+table_names = [
+    "orders",
+    "order_items",
+    "customers",
+    "products",
+    "order_payments",
+    "sellers",
+    "order_reviews",
+    "geolocation",
+    "category_name_translation",
+]
 
 
+def main():
+    # 2. Khởi tạo BigQuery Client & Dataset
+    client = bigquery.Client()
+    project_id = "data-warehouse-group-5"
+    dataset_id = "raw_layer"
 
-# 3. Tạo danh sách (Dictionary) map giữa tên file CSV và tên Bảng trên BigQuery
-# Quy tắc: Tên file CSV : Tên bảng BigQuery (snake_case)
-tables_mapping = {
-    "olist_orders_dataset.csv": "orders",
-    "olist_order_items_dataset.csv": "order_items",
-    "olist_customers_dataset.csv": "customers",
-    "olist_products_dataset.csv": "products",
-    "olist_order_payments_dataset.csv": "order_payments",
-    "olist_sellers_dataset.csv": "sellers",
-    "olist_order_reviews_dataset.csv": "order_reviews",
-    "olist_geolocation_dataset.csv": "geolocation",
-    "product_category_name_translation.csv": "category_translations"
-}
+    # Đảm bảo Dataset đã tồn tại
+    dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
+    dataset = bigquery.Dataset(dataset_ref)
+    dataset.location = "asia-southeast1"  
+    client.create_dataset(dataset, exists_ok=True)
 
-# 4. Cấu hình Job chạy (Giống hệt các tùy chọn Advanced Options trên UI)
-job_config = bigquery.LoadJobConfig(
-    source_format=bigquery.SourceFormat.CSV,
-    skip_leading_rows=1, # Bỏ qua dòng tiêu đề
-    autodetect=True,     # Tự động nhận diện kiểu dữ liệu (Auto detect)
-    allow_quoted_newlines=True, # Cho phép xuống dòng trong bảng order_reviews
-    max_bad_records=50,         # Bỏ qua tối đa 50 dòng lỗi
-    # Ghi đè nếu bảng đã tồn tại (WRITE_TRUNCATE) 
-    write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-)
+    engine = create_engine(NEON_DATABASE_URL)
 
-# 5. Vòng lặp đọc và đẩy từng file lên BigQuery
-print("Bắt đầu tiến trình Extract & Load lên BigQuery...")
+    # 6. Vòng lặp Extract (từ Neon) & Load (lên BigQuery)
+    print("Bắt đầu tiến trình ETL: Neon PostgreSQL -> Google BigQuery...")
 
-dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
-dataset = bigquery.Dataset(dataset_ref)
-dataset.location = "asia-southeast1"  
-client.create_dataset(dataset, exists_ok=True)
+    for table_name in table_names:
+        table_id = f"{project_id}.{dataset_id}.{table_name}"
+        print(f"\n--- Đang xử lý bảng: {table_name} ---")
+        
+        try:
+            query = f"SELECT * FROM {table_name}"
+            
+            # Bảng geolocation có >1 triệu dòng nên dùng chunk lớn hơn (250.000 dòng)
+            # để tránh bị BigQuery Rate Limit (quá nhiều thao tác cập nhật bảng liên tiếp)
+            chunk_size = 250000 if table_name == "geolocation" else 20000
+            chunks = pd.read_sql(query, engine, chunksize=chunk_size)
+            
+            is_first_chunk = True
+            total_loaded = 0
+            
+            for chunk in chunks:
+                chunk_rows = len(chunk)
+                total_loaded += chunk_rows
+                print(f"  + Đã kéo {total_loaded} dòng từ Neon, đang nạp lên BigQuery...")
+                
+                # CẤU HÌNH THÔNG MINH: 
+                write_mode = bigquery.WriteDisposition.WRITE_TRUNCATE if is_first_chunk else bigquery.WriteDisposition.WRITE_APPEND
+                job_config = bigquery.LoadJobConfig(write_disposition=write_mode)
+                
+                job = client.load_table_from_dataframe(chunk, table_id, job_config=job_config)
+                job.result() 
+                
+                is_first_chunk = False # Tắt cờ first_chunk
+                
+            # Kiểm tra tổng số dòng sau khi nạp xong toàn bộ chunks
+            table = client.get_table(table_id)
+            print(f"✅ Hoàn tất bảng {table_name}! Tổng số trên BigQuery: {table.num_rows} dòng.")
 
-for csv_file, table_name in tables_mapping.items():
-    csv_file = os.path.join(csv_folder, csv_file)
+        except Exception as e:
+            print(f"❌ Lỗi khi xử lý bảng {table_name}: {e}")
+            continue
 
-    if not os.path.exists(csv_file):
-        print(f"⚠️ Không tìm thấy file: {csv_file}")
-        continue
+    print("\n🎉 Tiến trình ETL hoàn tất 100%!")
 
-    table_id = f"{project_id}.{dataset_id}.{table_name}"
-    print(f"Đang tải {csv_file} vào bảng {table_name}...")
 
-    try:
-        with open(csv_file, "rb") as source_file:
-            job = client.load_table_from_file(
-                source_file, table_id, job_config=job_config
-            )
-        job.result()
-
-        table = client.get_table(table_id)
-        print(f"✅ Hoàn tất! Đã nạp {table.num_rows} dòng vào {table_id}\n")
-
-    except Exception as e:
-        print(f"❌ Lỗi khi nạp {table_name}: {e}\n")
-        continue
-
-print("🎉 Tiến trình ETL hoàn tất 100%!")
+if __name__ == "__main__":
+    main()

@@ -70,7 +70,7 @@ Each CSV is loaded into the following table:
 | `olist_sellers_dataset.csv` | `sellers` |
 | `olist_order_reviews_dataset.csv` | `order_reviews` |
 | `olist_geolocation_dataset.csv` | `geolocation` |
-| `product_category_name_translation.csv` | `category_translations` |
+| `product_category_name_translation.csv` | `category_name_translation` |
 
 The fully qualified table names use this format:
 
