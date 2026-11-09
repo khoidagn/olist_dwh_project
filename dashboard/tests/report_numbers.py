@@ -96,7 +96,7 @@ def trends() -> None:
     for d, v in by_day.items():
         print(f"{WEEKDAYS[int(d)]}: {int(v):,} đơn ({v / total:.2%})")
     by_hour = grid.groupby("hour")["orders"].sum()
-    print(f"Đơn từ 10h đến 22h: {by_hour.loc[10:21].sum() / total:.2%} | từ 0h đến 6h: {by_hour.loc[0:5].sum() / total:.2%}")
+    print(f"Đơn từ 10h đến trước 22h: {by_hour.loc[10:21].sum() / total:.2%} | từ 0h đến 6h: {by_hour.loc[0:5].sum() / total:.2%}")
     states = run(Q.state_summary(DEF))
     states["share_revenue"] = states["revenue"] / states["revenue"].sum()
     states["share_orders"] = states["orders"] / states["orders"].sum()

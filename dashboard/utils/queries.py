@@ -363,7 +363,7 @@ def churn_by_last_category(f: Filters, limit: int = 15):
             where f.order_status not in ('canceled', 'unavailable')
             qualify row_number() over (
                 partition by f.customer_unique_id
-                order by f.order_purchase_timestamp desc, f.price desc
+                order by f.order_purchase_timestamp desc, f.price desc, f.order_id, f.order_item_id
             ) = 1
         )
         select

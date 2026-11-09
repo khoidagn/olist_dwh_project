@@ -51,7 +51,7 @@ page_header(
     f"Ai đang rời đi, ở đâu và vì mua gì. Một khách bị coi là churn khi đã quá "
     f"{CHURN_DAYS} ngày chưa quay lại; nhóm {COOLING_FROM}-{CHURN_DAYS} ngày là nhóm "
     "còn kịp giữ chân.",
-    [("Tính đến", f"{ref_date:%d/%m/%Y}")] + f.scope(dates=False, categories=False)
+    [("Dữ liệu đến", f"{ref_date:%d/%m/%Y}")] + f.scope(dates=False, categories=False)
     + [("Ngưỡng churn", f"{CHURN_DAYS} ngày")],
 )
 

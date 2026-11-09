@@ -55,7 +55,7 @@ page_header(
     "Phân khúc khách hàng RFM",
     "Khách hàng là ai, đáng giá bao nhiêu và nên đối xử khác nhau ra sao. "
     "RFM chấm điểm mỗi khách theo lần mua gần nhất (R), số đơn (F) và tổng chi tiêu (M).",
-    [("Tính đến", f"{ref_date:%d/%m/%Y}")] + f.scope(dates=False, categories=False)
+    [("Dữ liệu đến", f"{ref_date:%d/%m/%Y}")] + f.scope(dates=False, categories=False)
     + [("Lưu ý", "bộ lọc ngày và danh mục không áp dụng")],
 )
 

@@ -71,13 +71,13 @@ def pipeline_checks() -> None:
                count(distinct concat(order_id, '-', cast(order_item_id as string))) as grain
         from {MART}.fct_order_items_sales`
     """)
-    check("CSV → DWH", "Số dòng fact = số dòng order_items gốc", raw["rows_"], fact["rows_"])
-    check("CSV → DWH", "Tổng price + freight của fact = dữ liệu gốc", round(raw["amount"], 2), round(fact["amount"], 2), 0.5)
-    check("CSV → DWH", "Fact không trùng (order_id, order_item_id)", fact["rows_"], fact["grain"])
+    check("Dữ liệu gốc → DWH", "Số dòng fact = số dòng order_items gốc", raw["rows_"], fact["rows_"])
+    check("Dữ liệu gốc → DWH", "Tổng price + freight của fact = dữ liệu gốc", round(raw["amount"], 2), round(fact["amount"], 2), 0.5)
+    check("Dữ liệu gốc → DWH", "Fact không trùng (order_id, order_item_id)", fact["rows_"], fact["grain"])
 
     raw_cust = one(f"select count(distinct customer_unique_id) as n from {RAW}.customers`")["n"]
     dim_cust = one(f"select count(*) as n from {MART}.dim_customers`")["n"]
-    check("CSV → DWH", "dim_customers = số customer_unique_id gốc", raw_cust, dim_cust)
+    check("Dữ liệu gốc → DWH", "dim_customers = số customer_unique_id gốc", raw_cust, dim_cust)
 
 
 def dashboard_checks() -> pd.Series:

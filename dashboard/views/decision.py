@@ -60,7 +60,7 @@ page_header(
     "Chiến dịch giữ chân khách hàng",
     "Có nên chi tiền kéo khách sắp rời bỏ quay lại hay không, nhắm vào nhóm nào, "
     "và mức ưu đãi bao nhiêu thì còn có lãi.",
-    [("Tính đến", f"{overview['last_purchase']:%d/%m/%Y}")]
+    [("Dữ liệu đến", f"{overview['last_purchase']:%d/%m/%Y}")]
     + f.scope(dates=False, categories=False)
     + [("Lưu ý", "bộ lọc ngày và danh mục không áp dụng")],
 )
