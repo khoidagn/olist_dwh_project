@@ -34,14 +34,14 @@ rfm_scoring as (
         frequency_orders,
         monetary_value,
         last_purchase_timestamp,
-        ntile(5) over (order by recency_days desc) as r_score,
+        ntile(5) over (order by recency_days desc, customer_unique_id) as r_score,
         case 
             when frequency_orders >= 4 then 5
             when frequency_orders = 3 then 4
             when frequency_orders = 2 then 3
             else 1
         end as f_score,
-        ntile(5) over (order by monetary_value asc) as m_score
+        ntile(5) over (order by monetary_value asc, customer_unique_id) as m_score
     from customer_metrics
 ),
 
