@@ -50,8 +50,17 @@ jobs:
           mkdir -p ~/.dbt
           cat << EOF > ~/.dbt/profiles.yml
           olist_dbt:
-            target: prod
+            target: dev
             outputs:
+              dev:
+                type: bigquery
+                method: service-account
+                project: $GCP_PROJECT_ID
+                dataset: dbt_staging
+                keyfile: /tmp/sa_key.json
+                location: asia-southeast1
+                threads: 4
+                timeout_seconds: 300
               prod:
                 type: bigquery
                 method: service-account
@@ -69,13 +78,13 @@ jobs:
           echo "Bắt đầu chạy pipeline dbt..."
 
       - name: Step 2 - dbt Dependencies
-        run: dbt deps
+        run: dbt deps --profiles-dir ~/.dbt
 
       - name: Step 3 - dbt Transformation & Mart Modeling
-        run: dbt run --target prod
+        run: dbt run --profiles-dir ~/.dbt --target dev
 
       - name: Step 4 - dbt Data Quality Validation
-        run: dbt test --target prod
+        run: dbt test --profiles-dir ~/.dbt --target dev
 
       - name: Step 5 - Pipeline Health Summary
         if: always()
