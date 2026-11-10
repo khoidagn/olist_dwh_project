@@ -45,7 +45,7 @@ jobs:
           echo "GCP_KEYFILE=/tmp/sa_key.json" >> $GITHUB_ENV
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa_key.json" >> $GITHUB_ENV
 
-      - name: Setup dbt profiles.yml
+      - name: Create dbt profiles.yml
         run: |
           mkdir -p ~/.dbt
           cat << EOF > ~/.dbt/profiles.yml
@@ -66,16 +66,16 @@ jobs:
       - name: Step 1 - Check Raw Layer Status
         run: |
           echo "Dữ liệu raw_layer đã được nạp sẵn trên BigQuery (Dataset: raw_layer)."
-          echo "Tiến hành chạy biến đổi và kiểm thử dbt..."
+          echo "Bắt đầu chạy pipeline dbt..."
 
       - name: Step 2 - dbt Dependencies
         run: dbt deps
 
       - name: Step 3 - dbt Transformation & Mart Modeling
-        run: dbt run
+        run: dbt run --target prod
 
       - name: Step 4 - dbt Data Quality Validation
-        run: dbt test
+        run: dbt test --target prod
 
       - name: Step 5 - Pipeline Health Summary
         if: always()
