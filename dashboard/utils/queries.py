@@ -417,7 +417,8 @@ def campaign_pool(f: Filters):
     )
 
 
-def campaign_targets(f: Filters, rmin: int, rmax: int, segments: tuple, limit: int = 1000):
+def campaign_targets(f: Filters, rmin: int, rmax: int, segments: tuple, limit: int | None = None):
+    limit_sql = f"limit {int(limit)}" if limit else ""
     return _rfm(
         f"""
         select
@@ -431,8 +432,8 @@ def campaign_targets(f: Filters, rmin: int, rmax: int, segments: tuple, limit: i
         from customers
         where recency_days between @rmin and @rmax
           and customer_segment in unnest(@segments)
-        order by monetary desc
-        limit {int(limit)}
+        order by monetary desc, customer_unique_id
+        {limit_sql}
         """,
         f,
         (("rmin", "INT64", int(rmin)), ("rmax", "INT64", int(rmax)), ("segments", "STRING", tuple(segments))),

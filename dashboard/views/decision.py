@@ -27,6 +27,7 @@ from utils.layout import card, note, page_header, provenance, section, table_vie
 from utils.queries import campaign_pool, campaign_targets, rfm_overview
 
 COOLING = (91, 180)
+SHOW_TARGETS = 1000
 TABLES = ["fct_customer_rfm", "dim_customers"]
 DEFAULT_SCENARIOS = pd.DataFrame(
     {
@@ -327,12 +328,16 @@ with card(
 section("4. Triển khai")
 with card(
     "Danh sách khách mục tiêu",
-    f"Khách chi tiêu cao nhất trong nhóm {rmin} đến {rmax} ngày thuộc các phân khúc đã chọn",
+    f"Toàn bộ khách trong nhóm {rmin} đến {rmax} ngày thuộc các phân khúc đã chọn, sắp theo chi tiêu giảm dần",
 ):
     people = load(*campaign_targets(f, rmin, rmax, tuple(segments)), label="Danh sách khách mục tiêu")
-    st.caption(f"{num(len(people))} khách, sắp theo chi tiêu giảm dần.")
+    shown = people.head(SHOW_TARGETS)
+    st.caption(
+        f"{num(len(people))} khách trong nhóm mục tiêu. Bảng hiển thị {num(len(shown))} khách chi tiêu cao nhất, "
+        "tệp CSV gồm toàn bộ danh sách."
+    )
     st.dataframe(
-        people,
+        shown,
         hide_index=True,
         width="stretch",
         column_config={
