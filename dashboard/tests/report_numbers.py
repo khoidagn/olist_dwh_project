@@ -107,6 +107,44 @@ def trends() -> None:
     print(f"Cả nước: giao trễ {(states['late_rate'] * w).sum() / w.sum():.2%} | ngày giao TB {(states['delivery_days'] * w).sum() / w.sum():.2f}")
     print(f"Cả nước: AOV {states['revenue'].sum() / states['orders'].sum():,.2f}")
     show(run(Q.top_cities(DEF)))
+    rj_sellers()
+
+
+def rj_sellers() -> None:
+    sql, params = Q._sales(
+        """
+        , orders as (
+            select
+                order_id,
+                logical_or(seller_state = 'SP') as has_sp,
+                countif(seller_state = 'SP') as sp_items,
+                count(*) as items,
+                any_value(order_status) = 'delivered'
+                    and any_value(order_delivered_customer_date) is not null as delivered,
+                date(any_value(order_delivered_customer_date))
+                    > date(any_value(order_estimated_delivery_date)) as late
+            from sales
+            group by order_id
+        )
+        select
+            has_sp,
+            count(*) as orders,
+            sum(sp_items) as sp_items,
+            sum(items) as items,
+            countif(delivered) as delivered_orders,
+            safe_divide(countif(delivered and late), countif(delivered)) as late_rate
+        from orders
+        group by has_sp
+        order by has_sp desc
+        """,
+        Filters(DEFAULT_RANGE[0], DEFAULT_RANGE[1], ("RJ",), ()),
+    )
+    rows = run((sql, params))
+    total_orders, total_items = rows["orders"].sum(), rows["items"].sum()
+    print(f"RJ: {int(total_orders):,} đơn | sản phẩm từ người bán SP {rows['sp_items'].sum() / total_items:.2%}")
+    for _, r in rows.iterrows():
+        group = "có ít nhất 1 sản phẩm từ SP" if r["has_sp"] else "không có sản phẩm từ SP"
+        print(f"  Đơn {group}: {int(r['orders']):,} đơn | giao trễ {r['late_rate']:.2%} trên {int(r['delivered_orders']):,} đơn đã giao")
 
 
 def rfm() -> pd.Series:
